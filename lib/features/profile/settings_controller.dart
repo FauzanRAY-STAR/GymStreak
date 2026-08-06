@@ -3,11 +3,14 @@ import 'package:get/get.dart';
 
 import '../../app/data/models/user_settings.dart';
 import '../../app/data/repositories/user_settings_repository.dart';
+import '../../app/data/services/workout_schedule_sync_service.dart';
 import '../../app/utils/app_date_utils.dart';
 
 /// Mengelola form edit pengaturan pengguna yang sudah pernah onboarding.
 class SettingsController extends GetxController {
   final UserSettingsRepository _repository = UserSettingsRepository();
+  final WorkoutScheduleSyncService _scheduleSyncService =
+      WorkoutScheduleSyncService();
 
   final TextEditingController nameController = TextEditingController();
   final RxInt weeklyTarget = 4.obs;
@@ -61,7 +64,6 @@ class SettingsController extends GetxController {
   void setWeeklyTarget(int value) {
     final clamped = value.clamp(3, 6);
     weeklyTarget.value = clamped;
-    // Hari workout tidak boleh melebihi target mingguan yang baru.
     if (workoutDays.length > clamped) {
       final trimmed = (workoutDays.toList()..sort()).take(clamped).toSet();
       workoutDays
@@ -110,7 +112,10 @@ class SettingsController extends GetxController {
       reminderTime: reminderTimeLabel,
       fitnessGoal: fitnessGoal.value,
     );
+
     await _repository.saveSettings(updated);
+    await _scheduleSyncService.applySettings(updated);
+
     isSaving.value = false;
     Get.back(result: true);
   }

@@ -4,6 +4,7 @@ import '../../app/data/database/database_helper.dart';
 import '../../app/data/models/user_settings.dart';
 import '../../app/data/repositories/user_settings_repository.dart';
 import '../../app/data/repositories/workout_session_repository.dart';
+import '../../app/data/services/notification_service.dart';
 import '../../app/data/services/streak_service.dart';
 import '../../app/routes/app_routes.dart';
 
@@ -51,17 +52,41 @@ class ProfileController extends GetxController {
   Future<void> toggleReminder(bool value) async {
     final current = settings.value;
     if (current == null) return;
-    final updated = current.copyWith(reminderEnabled: value);
+
+    if (value) {
+      final permissionGranted = await NotificationService.instance
+          .requestPermission();
+      if (!permissionGranted) {
+        Get.snackbar(
+          'Izin notifikasi diperlukan',
+          'Izinkan notifikasi agar GymStreak dapat mengingatkan jadwalmu.',
+        );
+        return;
+      }
+    }
+
+    final updated = current.copyWith(
+      reminderEnabled: value,
+      secondReminderEnabled: value ? current.secondReminderEnabled : false,
+    );
     await _settingsRepository.saveSettings(updated);
     settings.value = updated;
+
+    if (value) {
+      await NotificationService.instance.syncFromStoredSettings();
+    } else {
+      await NotificationService.instance.cancelWorkoutReminders();
+    }
   }
 
   Future<void> toggleSecondReminder(bool value) async {
     final current = settings.value;
-    if (current == null) return;
+    if (current == null || !current.reminderEnabled) return;
+
     final updated = current.copyWith(secondReminderEnabled: value);
     await _settingsRepository.saveSettings(updated);
     settings.value = updated;
+    await NotificationService.instance.syncFromStoredSettings();
   }
 
   Future<void> openSettings() async {
@@ -73,15 +98,16 @@ class ProfileController extends GetxController {
 
   Future<void> openScheduleList() async {
     await Get.toNamed(AppRoutes.scheduleList);
+    await loadProfile();
   }
 
   Future<void> openWorkoutList() async {
     await Get.toNamed(AppRoutes.workoutList);
-    // Riwayat/jadwal bisa berubah dan memengaruhi statistik, muat ulang.
     await loadProfile();
   }
 
   Future<void> resetAllData() async {
+    await NotificationService.instance.cancelWorkoutReminders();
     await DatabaseHelper.instance.resetUserData();
     Get.offAllNamed(AppRoutes.splash);
   }

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../app/data/models/workout_session.dart';
 import '../../app/data/repositories/user_settings_repository.dart';
 import '../../app/data/repositories/workout_session_repository.dart';
+import '../../app/data/services/notification_service.dart';
 import '../../app/data/services/streak_service.dart';
 import '../../app/routes/app_routes.dart';
 
@@ -50,6 +51,7 @@ class WorkoutListController extends GetxController {
 
   Future<void> deleteWorkout(WorkoutSession session) async {
     await _repository.delete(session.id!);
+
     final settings = await _settingsRepository.getSettings();
     if (settings != null) {
       await _streakService.recalculateWeek(
@@ -57,6 +59,8 @@ class WorkoutListController extends GetxController {
         settings.weeklyTarget,
       );
     }
+
+    await NotificationService.instance.syncFromStoredSettings();
     await loadSessions();
   }
 }
