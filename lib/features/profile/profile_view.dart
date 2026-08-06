@@ -208,7 +208,7 @@ class _PreferencesCard extends StatelessWidget {
             InfoRow(
               icon: Icons.access_time_rounded,
               label: 'Jam Pengingat',
-              value: settings.reminderTime,
+              value: 'Diatur per jadwal',
             ),
           ],
         ),

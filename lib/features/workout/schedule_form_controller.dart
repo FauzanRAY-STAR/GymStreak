@@ -3,16 +3,20 @@ import 'package:get/get.dart';
 
 import '../../app/data/models/workout_schedule.dart';
 import '../../app/data/repositories/workout_schedule_repository.dart';
+import '../../app/data/services/workout_schedule_sync_service.dart';
 import '../../app/utils/app_constants.dart';
 import '../../app/utils/app_date_utils.dart';
 
-/// Mengelola form tambah/edit satu [WorkoutSchedule] (satu hari, satu jenis
-/// workout, satu jam pengingat).
+/// Mengelola form tambah/edit satu [WorkoutSchedule].
 class ScheduleFormController extends GetxController {
-  ScheduleFormController({WorkoutScheduleRepository? repository})
-    : _repository = repository ?? WorkoutScheduleRepository();
+  ScheduleFormController({
+    WorkoutScheduleRepository? repository,
+    WorkoutScheduleSyncService? syncService,
+  }) : _repository = repository ?? WorkoutScheduleRepository(),
+       _syncService = syncService ?? WorkoutScheduleSyncService();
 
   final WorkoutScheduleRepository _repository;
+  final WorkoutScheduleSyncService _syncService;
 
   WorkoutSchedule? _editing;
 
@@ -74,6 +78,16 @@ class ScheduleFormController extends GetxController {
       return;
     }
 
+    final validationMessage = await _syncService.validateSchedule(
+      dayOfWeek: dayOfWeek.value,
+      active: active.value,
+      editingId: _editing?.id,
+    );
+    if (validationMessage != null) {
+      Get.snackbar('Jadwal tidak dapat disimpan', validationMessage);
+      return;
+    }
+
     isSaving.value = true;
     if (_editing != null) {
       await _repository.update(
@@ -94,6 +108,8 @@ class ScheduleFormController extends GetxController {
         ),
       );
     }
+
+    await _syncService.refreshSettingsFromSchedules();
     isSaving.value = false;
     Get.back(result: true);
   }

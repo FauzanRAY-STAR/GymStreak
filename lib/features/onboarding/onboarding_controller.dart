@@ -5,6 +5,7 @@ import '../../app/data/models/user_settings.dart';
 import '../../app/data/models/workout_schedule.dart';
 import '../../app/data/repositories/user_settings_repository.dart';
 import '../../app/data/repositories/workout_schedule_repository.dart';
+import '../../app/data/services/notification_service.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/utils/app_constants.dart';
 import '../../app/utils/app_date_utils.dart';
@@ -45,7 +46,6 @@ class OnboardingController extends GetxController {
   void setWeeklyTarget(int value) {
     final clamped = value.clamp(3, 6);
     weeklyTarget.value = clamped;
-    // Hari workout tidak boleh melebihi target mingguan yang baru.
     if (workoutDays.length > clamped) {
       final trimmed = (workoutDays.toList()..sort()).take(clamped).toSet();
       workoutDays
@@ -84,7 +84,7 @@ class OnboardingController extends GetxController {
 
     isSaving.value = true;
     final sortedDays = workoutDays.toList()..sort();
-    final settings = UserSettings(
+    var settings = UserSettings(
       name: name,
       weeklyTarget: weeklyTarget.value,
       workoutDays: sortedDays,
@@ -94,18 +94,32 @@ class OnboardingController extends GetxController {
       fitnessGoal: fitnessGoal.value,
       onboardingCompleted: true,
     );
+
     await _repository.saveSettings(settings);
     await _seedInitialSchedules(sortedDays);
+
+    final permissionGranted = await NotificationService.instance
+        .requestPermission();
+    if (permissionGranted) {
+      await NotificationService.instance.syncFromStoredSettings();
+    } else {
+      settings = settings.copyWith(reminderEnabled: false);
+      await _repository.saveSettings(settings);
+      Get.snackbar(
+        'Notifikasi belum diizinkan',
+        'Pengingat dapat diaktifkan nanti melalui halaman Profil.',
+      );
+    }
+
     isSaving.value = false;
     Get.offAllNamed(AppRoutes.main);
   }
 
-  /// Membuat jadwal workout awal ("Full Body") untuk tiap hari yang dipilih
-  /// saat onboarding, agar pengguna tidak mulai dari jadwal kosong. Jadwal
-  /// ini tetap bisa diubah/dihapus kapan saja lewat halaman Jadwal Workout.
+  /// Membuat jadwal awal Full Body untuk setiap hari yang dipilih.
   Future<void> _seedInitialSchedules(List<int> days) async {
     final existing = await _scheduleRepository.getAll();
     if (existing.isNotEmpty) return;
+
     for (final day in days) {
       await _scheduleRepository.insert(
         WorkoutSchedule(

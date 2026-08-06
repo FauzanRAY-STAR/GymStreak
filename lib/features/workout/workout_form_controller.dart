@@ -4,15 +4,13 @@ import 'package:get/get.dart';
 import '../../app/data/models/workout_session.dart';
 import '../../app/data/repositories/user_settings_repository.dart';
 import '../../app/data/repositories/workout_session_repository.dart';
+import '../../app/data/services/notification_service.dart';
 import '../../app/data/services/streak_service.dart';
 import '../../app/utils/app_constants.dart';
 import '../../app/utils/app_date_utils.dart';
 import '../../app/utils/clock_service.dart';
 
-/// Mengelola form tambah/edit satu [WorkoutSession]. Jika [Get.arguments]
-/// berisi [WorkoutSession], form berjalan dalam mode edit; jika berisi Map
-/// dengan key 'workoutType', form terisi awal dari jadwal hari ini (alur
-/// "Selesaikan Workout").
+/// Mengelola form tambah/edit satu [WorkoutSession].
 class WorkoutFormController extends GetxController {
   WorkoutFormController({
     WorkoutSessionRepository? repository,
@@ -100,6 +98,7 @@ class WorkoutFormController extends GetxController {
       );
       return;
     }
+
     final duration = int.tryParse(durationController.text.trim());
     if (duration == null || duration <= 0) {
       Get.snackbar(
@@ -145,6 +144,10 @@ class WorkoutFormController extends GetxController {
         settings.weeklyTarget,
       );
     }
+
+    // Jika workout hari ini sudah selesai, pengingat kedua hari ini
+    // dibatalkan dan jadwal minggu berikutnya dipasang kembali.
+    await NotificationService.instance.syncFromStoredSettings();
 
     isSaving.value = false;
     Get.back(result: true);

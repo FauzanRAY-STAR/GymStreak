@@ -60,6 +60,18 @@ class WorkoutSessionRepository {
     return rows.map(WorkoutSession.fromMap).toList();
   }
 
+  Future<DateTime?> getOldestWorkoutDate() async {
+    final db = await _db;
+    final rows = await db.query(
+      'workout_sessions',
+      columns: ['workout_date'],
+      orderBy: 'workout_date ASC, id ASC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return AppDateUtils.parseDateKey(rows.first['workout_date'] as String);
+  }
+
   Future<int> insert(WorkoutSession session) async {
     final db = await _db;
     return db.insert('workout_sessions', session.toMap());
