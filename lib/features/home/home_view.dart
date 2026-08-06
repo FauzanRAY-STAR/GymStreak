@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../app/data/models/recipe.dart';
 import '../../app/data/models/workout_schedule.dart';
 import '../../app/data/models/workout_session.dart';
 import '../../app/theme/app_colors.dart';
+import '../../app/widgets/recipe_image.dart';
 import '../../app/widgets/stat_card.dart';
 import '../../app/widgets/workout_session_tile.dart';
 import 'home_controller.dart';
@@ -68,7 +70,13 @@ class HomeView extends GetView<HomeController> {
                 onComplete: controller.completeWorkout,
               ),
               const SizedBox(height: 16),
-              const _RecipePlaceholderCard(),
+              _DailyRecipeCard(
+                recipe: controller.recipeRecommendation.value,
+                onOpen: () {
+                  final recipe = controller.recipeRecommendation.value;
+                  if (recipe != null) controller.openRecipe(recipe);
+                },
+              ),
               const SizedBox(height: 16),
               _RecentWorkoutsSection(
                 sessions: controller.recentSessions,
@@ -92,6 +100,7 @@ class _WeeklyProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final progress = target == 0 ? 0.0 : (completed / target).clamp(0.0, 1.0);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -134,6 +143,7 @@ class _TodayWorkoutCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasSchedule = schedule != null;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -192,33 +202,73 @@ class _TodayWorkoutCard extends StatelessWidget {
   }
 }
 
-class _RecipePlaceholderCard extends StatelessWidget {
-  const _RecipePlaceholderCard();
+class _DailyRecipeCard extends StatelessWidget {
+  const _DailyRecipeCard({required this.recipe, required this.onOpen});
+
+  final Recipe? recipe;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (recipe == null) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Text('Rekomendasi resep belum tersedia.'),
+        ),
+      );
+    }
+
+    final item = recipe!;
+
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpen,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.restaurant_rounded, color: AppColors.accent),
-            const SizedBox(width: 14),
-            Expanded(
+            RecipeImage(recipe: item, width: double.infinity, height: 165),
+            Padding(
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Rekomendasi Resep Hari Ini',
-                    style: theme.textTheme.titleMedium,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: AppColors.accent,
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  // TODO(tahap-6): Tampilkan rekomendasi resep harian nyata
-                  // dari RecommendationService setelah fitur nutrisi dibangun.
-                  Text(
-                    'Akan tersedia setelah fitur Nutrisi (Tahap 6) selesai.',
-                    style: theme.textTheme.bodySmall,
+                  const SizedBox(height: 6),
+                  Text(item.name, style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.bolt_rounded,
+                        size: 17,
+                        color: AppColors.accent,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${item.estimatedProtein.toStringAsFixed(0)} g protein',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(width: 14),
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 17,
+                        color: AppColors.accent,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${item.cookingTimeMinutes} menit',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -242,6 +292,7 @@ class _RecentWorkoutsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
