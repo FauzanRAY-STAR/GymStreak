@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../features/nutrition/recipe_detail_binding.dart';
+import '../../features/nutrition/recipe_detail_view.dart';
 import '../../features/onboarding/onboarding_binding.dart';
 import '../../features/onboarding/onboarding_view.dart';
 import '../../features/profile/settings_binding.dart';
@@ -18,8 +20,6 @@ import '../widgets/main_navigation_view.dart';
 import '../widgets/splash_view.dart';
 import 'app_routes.dart';
 
-/// Daftar GetPage aplikasi. Route fitur lain (detail resep, dll.)
-/// ditambahkan pada tahap implementasi masing-masing.
 class AppPages {
   AppPages._();
 
@@ -38,6 +38,11 @@ class AppPages {
       name: AppRoutes.main,
       page: () => const MainNavigationView(),
       binding: MainBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.recipeDetail,
+      page: () => const RecipeDetailView(),
+      binding: RecipeDetailBinding(),
     ),
     GetPage(
       name: AppRoutes.settings,

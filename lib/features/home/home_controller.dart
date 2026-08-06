@@ -1,11 +1,13 @@
 import 'package:get/get.dart';
 
+import '../../app/data/models/recipe.dart';
 import '../../app/data/models/user_settings.dart';
 import '../../app/data/models/workout_schedule.dart';
 import '../../app/data/models/workout_session.dart';
 import '../../app/data/repositories/user_settings_repository.dart';
 import '../../app/data/repositories/workout_schedule_repository.dart';
 import '../../app/data/repositories/workout_session_repository.dart';
+import '../../app/data/services/recipe_recommendation_service.dart';
 import '../../app/data/services/streak_service.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/utils/app_date_utils.dart';
@@ -17,17 +19,21 @@ class HomeController extends GetxController {
     WorkoutSessionRepository? sessionRepository,
     WorkoutScheduleRepository? scheduleRepository,
     StreakService? streakService,
+    RecipeRecommendationService? recommendationService,
     ClockService? clock,
   }) : _settingsRepository = settingsRepository ?? UserSettingsRepository(),
        _sessionRepository = sessionRepository ?? WorkoutSessionRepository(),
        _scheduleRepository = scheduleRepository ?? WorkoutScheduleRepository(),
        _streakService = streakService ?? StreakService(),
+       _recommendationService =
+           recommendationService ?? RecipeRecommendationService(),
        _clock = clock ?? Get.find<ClockService>();
 
   final UserSettingsRepository _settingsRepository;
   final WorkoutSessionRepository _sessionRepository;
   final WorkoutScheduleRepository _scheduleRepository;
   final StreakService _streakService;
+  final RecipeRecommendationService _recommendationService;
   final ClockService _clock;
 
   final Rxn<UserSettings> settings = Rxn<UserSettings>();
@@ -37,6 +43,7 @@ class HomeController extends GetxController {
   final Rxn<WorkoutSchedule> todaySchedule = Rxn<WorkoutSchedule>();
   final RxBool isTodayLogged = false.obs;
   final RxList<WorkoutSession> recentSessions = <WorkoutSession>[].obs;
+  final Rxn<Recipe> recipeRecommendation = Rxn<Recipe>();
   final RxBool isLoading = true.obs;
 
   @override
@@ -72,7 +79,7 @@ class HomeController extends GetxController {
         weekEnd,
       );
       weeklyCompletedDays.value = weekSessions
-          .map((s) => AppDateUtils.formatDateKey(s.workoutDate))
+          .map((session) => AppDateUtils.formatDateKey(session.workoutDate))
           .toSet()
           .length;
 
@@ -91,7 +98,19 @@ class HomeController extends GetxController {
     }
 
     recentSessions.value = await _sessionRepository.getRecent(5);
+    recipeRecommendation.value = await _recommendationService
+        .getTodayRecommendation();
     isLoading.value = false;
+  }
+
+  void setRecipeRecommendation(Recipe recipe) {
+    recipeRecommendation.value = recipe;
+  }
+
+  Future<void> openRecipe(Recipe recipe) async {
+    await Get.toNamed(AppRoutes.recipeDetail, arguments: recipe.id);
+    recipeRecommendation.value = await _recommendationService
+        .getTodayRecommendation();
   }
 
   Future<void> completeWorkout() async {

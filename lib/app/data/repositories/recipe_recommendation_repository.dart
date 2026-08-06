@@ -28,6 +28,19 @@ class RecipeRecommendationRepository {
     return RecipeRecommendationHistory.fromMap(rows.first);
   }
 
+  Future<int> countForDate(DateTime date) async {
+    final db = await _db;
+    final rows = await db.rawQuery(
+      '''
+      SELECT COUNT(*) AS count
+      FROM recipe_recommendation_history
+      WHERE recommendation_date = ?
+      ''',
+      [AppDateUtils.formatDateKey(date)],
+    );
+    return Sqflite.firstIntValue(rows) ?? 0;
+  }
+
   /// ID resep yang pernah direkomendasikan sejak [since] (inklusif) sampai
   /// hari ini, dipakai untuk menghindari pengulangan dalam 7 hari terakhir.
   Future<List<String>> getRecentRecipeIds(DateTime since) async {
