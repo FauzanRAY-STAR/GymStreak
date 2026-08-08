@@ -5,7 +5,6 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../../app/data/models/workout_session.dart';
 import '../../app/theme/app_colors.dart';
-import '../../app/widgets/info_row.dart';
 import '../../app/widgets/workout_session_tile.dart';
 import 'calendar_controller.dart';
 
@@ -15,103 +14,300 @@ class CalendarView extends GetView<CalendarController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kalender'),
-        actions: [
-          Obx(
-            () => IconButton(
-              icon: Icon(
-                controller.showHeatmap.value
-                    ? Icons.calendar_month_rounded
-                    : Icons.grid_on_rounded,
+      body: SafeArea(
+        bottom: false,
+        child: Obx(() {
+          if (controller.isLoading.value &&
+              controller.sessionsByDate.isEmpty) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () =>
+                controller.loadMonth(
+                  controller.focusedMonth.value,
+                ),
+            child: ListView(
+              physics:
+              const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                48,
               ),
-              tooltip: controller.showHeatmap.value
-                  ? 'Tampilan Kalender'
-                  : 'Tampilan Heatmap',
-              onPressed: controller.toggleView,
+              children: [
+                const _CalendarHeader(),
+
+                const SizedBox(height: 24),
+
+                _CalendarCard(
+                  controller: controller,
+                ),
+
+                const SizedBox(height: 14),
+
+                const _LegendRow(),
+
+                const SizedBox(height: 28),
+
+                _SelectedDateDetail(
+                  controller: controller,
+                ),
+
+                const SizedBox(height: 28),
+
+                _MonthlyOverview(
+                  controller: controller,
+                ),
+              ],
             ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _CalendarHeader extends StatelessWidget {
+  const _CalendarHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Kalender',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Pantau konsistensi workout kamu.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CalendarCard extends StatelessWidget {
+  const _CalendarCard({
+    required this.controller,
+  });
+
+  final CalendarController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        14,
+        14,
+        14,
+        16,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.divider,
+        ),
+      ),
+      child: Column(
+        children: [
+          _MonthSwitcher(
+            controller: controller,
+          ),
+
+          const SizedBox(height: 12),
+
+          _MonthCalendar(
+            controller: controller,
           ),
         ],
       ),
-      body: Obx(() {
-        if (controller.isLoading.value && controller.sessionsByDate.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: controller.showHeatmap.value
-                    ? _HeatmapGrid(controller: controller)
-                    : _MonthCalendar(controller: controller),
+    );
+  }
+}
+
+class _MonthSwitcher extends StatelessWidget {
+  const _MonthSwitcher({
+    required this.controller,
+  });
+
+  final CalendarController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final month =
+        controller.focusedMonth.value;
+
+    return Row(
+      children: [
+        _MonthButton(
+          icon: Icons.chevron_left_rounded,
+          onTap: () {
+            controller.onPageChanged(
+              DateTime(
+                month.year,
+                month.month - 1,
+                1,
               ),
+            );
+          },
+        ),
+
+        Expanded(
+          child: Text(
+            DateFormat(
+              'MMMM yyyy',
+              'id_ID',
+            ).format(month),
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 12),
-            const _LegendRow(),
-            const SizedBox(height: 16),
-            _SelectedDateDetail(controller: controller),
-            const SizedBox(height: 16),
-            _MonthlyStatsCard(controller: controller),
-          ],
-        );
-      }),
+          ),
+        ),
+
+        _MonthButton(
+          icon: Icons.chevron_right_rounded,
+          onTap: () {
+            controller.onPageChanged(
+              DateTime(
+                month.year,
+                month.month + 1,
+                1,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MonthButton extends StatelessWidget {
+  const _MonthButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceElevated,
+      borderRadius:
+      BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius:
+        BorderRadius.circular(12),
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(
+            icon,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _MonthCalendar extends StatelessWidget {
-  const _MonthCalendar({required this.controller});
+  const _MonthCalendar({
+    required this.controller,
+  });
 
   final CalendarController controller;
 
   @override
   Widget build(BuildContext context) {
     return TableCalendar<WorkoutSession>(
+      startingDayOfWeek: StartingDayOfWeek.monday,
       locale: 'id_ID',
       firstDay: DateTime(2020, 1, 1),
       lastDay: DateTime(2035, 12, 31),
-      focusedDay: controller.focusedMonth.value,
-      currentDay: controller.selectedDate.value,
+      focusedDay:
+      controller.focusedMonth.value,
       selectedDayPredicate: (day) =>
-          isSameDay(day, controller.selectedDate.value),
+          isSameDay(
+            day,
+            controller.selectedDate.value,
+          ),
       onDaySelected: (selected, focused) {
         controller.selectDate(selected);
       },
-      onPageChanged: controller.onPageChanged,
-      calendarFormat: CalendarFormat.month,
-      availableCalendarFormats: const {CalendarFormat.month: 'Bulan'},
-      headerStyle: const HeaderStyle(
-        formatButtonVisible: false,
-        titleCentered: true,
-        titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
+      onPageChanged:
+      controller.onPageChanged,
+      headerVisible: false,
+      calendarFormat:
+      CalendarFormat.month,
+      availableCalendarFormats: const {
+        CalendarFormat.month: 'Bulan',
+      },
+      rowHeight: 48,
+      daysOfWeekHeight: 30,
+      daysOfWeekStyle:
+      const DaysOfWeekStyle(
+        weekdayStyle: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
-        leftChevronIcon: Icon(
-          Icons.chevron_left_rounded,
-          color: AppColors.textPrimary,
-        ),
-        rightChevronIcon: Icon(
-          Icons.chevron_right_rounded,
-          color: AppColors.textPrimary,
+        weekendStyle: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
       ),
-      daysOfWeekStyle: const DaysOfWeekStyle(
-        weekdayStyle: TextStyle(color: AppColors.textSecondary),
-        weekendStyle: TextStyle(color: AppColors.textSecondary),
-      ),
-      calendarBuilders: CalendarBuilders(
-        defaultBuilder: (context, day, focusedDay) =>
-            _DayCell(controller: controller, day: day),
-        outsideBuilder: (context, day, focusedDay) =>
-            _DayCell(controller: controller, day: day, isOutside: true),
-        todayBuilder: (context, day, focusedDay) =>
-            _DayCell(controller: controller, day: day, isToday: true),
-        selectedBuilder: (context, day, focusedDay) =>
-            _DayCell(controller: controller, day: day, isSelected: true),
+      calendarBuilders:
+      CalendarBuilders(
+        defaultBuilder:
+            (context, day, focusedDay) =>
+            _DayCell(
+              controller: controller,
+              day: day,
+            ),
+        outsideBuilder:
+            (context, day, focusedDay) =>
+            _DayCell(
+              controller: controller,
+              day: day,
+              isOutside: true,
+            ),
+        todayBuilder:
+            (context, day, focusedDay) =>
+            _DayCell(
+              controller: controller,
+              day: day,
+              isToday: true,
+            ),
+        selectedBuilder:
+            (context, day, focusedDay) =>
+            _DayCell(
+              controller: controller,
+              day: day,
+              isSelected: true,
+            ),
       ),
     );
   }
@@ -128,127 +324,64 @@ class _DayCell extends StatelessWidget {
 
   final CalendarController controller;
   final DateTime day;
+
   final bool isToday;
   final bool isSelected;
   final bool isOutside;
 
   @override
   Widget build(BuildContext context) {
-    final intensity = controller.heaviestIntensity(day);
-    Color background;
-    Color textColor = AppColors.textPrimary;
-    switch (intensity) {
-      case null:
-        background = AppColors.heatmapNone;
-        break;
-      case WorkoutIntensity.ringan:
-        background = AppColors.heatmapLight;
-        break;
-      case WorkoutIntensity.sedang:
-        background = AppColors.heatmapMedium;
-        break;
-      case WorkoutIntensity.berat:
-        background = AppColors.heatmapHeavy;
-        textColor = const Color(0xFF0B1210);
-        break;
-    }
+    final intensity =
+    controller.heaviestIntensity(day);
+
+    final workoutColor =
+    _intensityColor(intensity);
+
+    final hasWorkout =
+        intensity != null;
 
     return Container(
-      margin: const EdgeInsets.all(4),
+      margin: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(10),
+        color: hasWorkout
+            ? workoutColor.withValues(
+          alpha: intensity ==
+              WorkoutIntensity.berat
+              ? 0.95
+              : 0.55,
+        )
+            : Colors.transparent,
+        borderRadius:
+        BorderRadius.circular(12),
         border: isSelected
-            ? Border.all(color: AppColors.accent, width: 2)
+            ? Border.all(
+          color: AppColors.accent,
+          width: 2,
+        )
             : isToday
-            ? Border.all(color: AppColors.textPrimary, width: 1.2)
+            ? Border.all(
+          color: AppColors
+              .textSecondary,
+          width: 1,
+        )
             : null,
       ),
       alignment: Alignment.center,
       child: Text(
         '${day.day}',
         style: TextStyle(
-          color: isOutside ? AppColors.textMuted : textColor,
-          fontWeight: isToday ? FontWeight.w700 : FontWeight.normal,
+          color: isOutside
+              ? AppColors.textMuted
+              : intensity ==
+              WorkoutIntensity.berat
+              ? AppColors.background
+              : AppColors.textPrimary,
           fontSize: 13,
+          fontWeight:
+          isSelected || isToday
+              ? FontWeight.w700
+              : FontWeight.w500,
         ),
-      ),
-    );
-  }
-}
-
-class _HeatmapGrid extends StatelessWidget {
-  const _HeatmapGrid({required this.controller});
-
-  final CalendarController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final month = controller.focusedMonth.value;
-    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    final firstDay = DateTime(month.year, month.month, 1);
-    // Kolom = hari dalam seminggu (Senin-Minggu), baris = minggu ke berapa.
-    final leadingBlanks = firstDay.weekday - 1;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            DateFormat('MMMM yyyy', 'id_ID').format(month),
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
-            ),
-            itemCount: leadingBlanks + daysInMonth,
-            itemBuilder: (context, index) {
-              if (index < leadingBlanks) return const SizedBox.shrink();
-              final day = DateTime(
-                month.year,
-                month.month,
-                index - leadingBlanks + 1,
-              );
-              final intensity = controller.heaviestIntensity(day);
-              Color color;
-              switch (intensity) {
-                case null:
-                  color = AppColors.heatmapNone;
-                  break;
-                case WorkoutIntensity.ringan:
-                  color = AppColors.heatmapLight;
-                  break;
-                case WorkoutIntensity.sedang:
-                  color = AppColors.heatmapMedium;
-                  break;
-                case WorkoutIntensity.berat:
-                  color = AppColors.heatmapHeavy;
-                  break;
-              }
-              final selected = isSameDay(day, controller.selectedDate.value);
-              return GestureDetector(
-                onTap: () => controller.selectDate(day),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(6),
-                    border: selected
-                        ? Border.all(color: AppColors.accent, width: 2)
-                        : null,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
       ),
     );
   }
@@ -259,22 +392,39 @@ class _LegendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 16,
-      runSpacing: 8,
+    return const Row(
+      mainAxisAlignment:
+      MainAxisAlignment.center,
       children: [
-        _LegendItem(color: AppColors.heatmapNone, label: 'Tidak ada'),
-        _LegendItem(color: AppColors.heatmapLight, label: 'Ringan'),
-        _LegendItem(color: AppColors.heatmapMedium, label: 'Sedang'),
-        _LegendItem(color: AppColors.heatmapHeavy, label: 'Berat'),
+        _LegendItem(
+          color: AppColors.heatmapNone,
+          label: 'Kosong',
+        ),
+        SizedBox(width: 12),
+        _LegendItem(
+          color: AppColors.heatmapLight,
+          label: 'Ringan',
+        ),
+        SizedBox(width: 12),
+        _LegendItem(
+          color: AppColors.heatmapMedium,
+          label: 'Sedang',
+        ),
+        SizedBox(width: 12),
+        _LegendItem(
+          color: AppColors.heatmapHeavy,
+          label: 'Berat',
+        ),
       ],
     );
   }
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({required this.color, required this.label});
+  const _LegendItem({
+    required this.color,
+    required this.label,
+  });
 
   final Color color;
   final String label;
@@ -285,110 +435,426 @@ class _LegendItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius:
+            BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+
+        const SizedBox(width: 5),
+
+        Text(
+          label,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(
+            fontSize: 10,
+            color: AppColors.textPrimary.withValues(alpha: 0.72),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
 }
 
-class _SelectedDateDetail extends StatelessWidget {
-  const _SelectedDateDetail({required this.controller});
+class _SelectedDateDetail
+    extends StatelessWidget {
+  const _SelectedDateDetail({
+    required this.controller,
+  });
 
   final CalendarController controller;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final date = controller.selectedDate.value;
-    final sessions = controller.sessionsFor(date);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(date),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            if (sessions.isEmpty)
-              Text(
-                'Tidak ada aktivitas workout pada tanggal ini.',
-                style: theme.textTheme.bodyMedium,
-              )
-            else
-              Column(
-                children: sessions
-                    .map(
-                      (session) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: WorkoutSessionTile(session: session),
-                      ),
-                    )
-                    .toList(),
-              ),
-          ],
+    final date =
+        controller.selectedDate.value;
+
+    final sessions =
+    controller.sessionsFor(date);
+
+    return Column(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Aktivitas',
+          style: theme
+              .textTheme.titleLarge
+              ?.copyWith(
+            fontWeight:
+            FontWeight.w800,
+          ),
         ),
-      ),
+
+        const SizedBox(height: 3),
+
+        Text(
+          DateFormat(
+            'EEEE, d MMMM yyyy',
+            'id_ID',
+          ).format(date),
+          style:
+          theme.textTheme.bodySmall,
+        ),
+
+        const SizedBox(height: 12),
+
+        if (sessions.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius:
+              BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.divider,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors
+                        .surfaceElevated,
+                    borderRadius:
+                    BorderRadius.circular(
+                      13,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons
+                        .self_improvement_rounded,
+                    color:
+                    AppColors.textSecondary,
+                  ),
+                ),
+
+                const SizedBox(width: 13),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tidak ada workout',
+                        style: theme
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(
+                          color: AppColors
+                              .textPrimary,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 3,
+                      ),
+                      Text(
+                        'Hari tanpa latihan atau rest day.',
+                        style: theme
+                            .textTheme
+                            .bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...sessions.map(
+                (session) =>
+                WorkoutSessionTile(
+                  session: session,
+                ),
+          ),
+      ],
     );
   }
 }
 
-class _MonthlyStatsCard extends StatelessWidget {
-  const _MonthlyStatsCard({required this.controller});
+class _MonthlyOverview
+    extends StatelessWidget {
+  const _MonthlyOverview({
+    required this.controller,
+  });
 
   final CalendarController controller;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final percentage = controller.monthlyTargetPercentage;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Statistik Bulan Ini', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            InfoRow(
-              icon: Icons.fitness_center_rounded,
-              label: 'Total Workout',
-              value: '${controller.monthlyTotalWorkouts} kali',
-            ),
-            const SizedBox(height: 10),
-            InfoRow(
-              icon: Icons.timer_rounded,
-              label: 'Total Durasi',
-              value: '${controller.monthlyTotalMinutes} menit',
-            ),
-            const SizedBox(height: 10),
-            InfoRow(
-              icon: Icons.flag_rounded,
-              label: 'Target Mingguan Tercapai',
-              value: controller.weeksTotalInMonth.value == 0
-                  ? '-'
-                  : '${percentage.round()}% (${controller.weeksAchievedInMonth.value}/${controller.weeksTotalInMonth.value} minggu)',
-            ),
-            const SizedBox(height: 10),
-            InfoRow(
-              icon: Icons.local_fire_department_rounded,
-              label: 'Weekly Streak',
-              value: '${controller.currentStreak.value}',
-            ),
-          ],
+
+    final percentage =
+        controller.monthlyTargetPercentage;
+
+    return Column(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ringkasan Bulan',
+          style:
+          theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
-      ),
+
+        const SizedBox(height: 3),
+
+        Text(
+          DateFormat(
+            'MMMM yyyy',
+            'id_ID',
+          ).format(
+            controller.focusedMonth.value,
+          ),
+          style:
+          theme.textTheme.bodySmall,
+        ),
+
+        const SizedBox(height: 12),
+
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius:
+            BorderRadius.circular(22),
+            border: Border.all(
+              color: AppColors.divider,
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatItem(
+                      icon: Icons
+                          .fitness_center_rounded,
+                      value:
+                      '${controller.monthlyTotalWorkouts}',
+                      label: 'Workout',
+                    ),
+                  ),
+
+                  const _StatDivider(),
+
+                  Expanded(
+                    child: _StatItem(
+                      icon:
+                      Icons.timer_rounded,
+                      value:
+                      '${controller.monthlyTotalMinutes}',
+                      label: 'Menit',
+                    ),
+                  ),
+
+                  const _StatDivider(),
+
+                  Expanded(
+                    child: _StatItem(
+                      icon: Icons
+                          .local_fire_department_rounded,
+                      value:
+                      '${controller.currentStreak.value}',
+                      label: 'Streak',
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              Container(
+                padding:
+                const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors
+                      .surfaceElevated,
+                  borderRadius:
+                  BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Target mingguan tercapai',
+                          style: theme
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                            color: AppColors
+                                .textPrimary,
+                            fontWeight:
+                            FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          controller
+                              .weeksTotalInMonth
+                              .value ==
+                              0
+                              ? '-'
+                              : '${percentage.round()}%',
+                          style: const TextStyle(
+                            color:
+                            AppColors.accent,
+                            fontWeight:
+                            FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    ClipRRect(
+                      borderRadius:
+                      BorderRadius.circular(20),
+                      child:
+                      LinearProgressIndicator(
+                        value: controller
+                            .weeksTotalInMonth
+                            .value ==
+                            0
+                            ? 0
+                            : (percentage / 100)
+                            .clamp(
+                          0.0,
+                          1.0,
+                        ),
+                        minHeight: 8,
+                        backgroundColor:
+                        AppColors.background,
+                        valueColor:
+                        const AlwaysStoppedAnimation(
+                          AppColors.accent,
+                        ),
+                      ),
+                    ),
+
+                    if (controller
+                        .weeksTotalInMonth
+                        .value >
+                        0) ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment:
+                        Alignment.centerLeft,
+                        child: Text(
+                          '${controller.weeksAchievedInMonth.value} dari '
+                              '${controller.weeksTotalInMonth.value} minggu tercapai',
+                          style: theme
+                              .textTheme
+                              .bodySmall,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: AppColors.accent,
+          size: 20,
+        ),
+
+        const SizedBox(height: 7),
+
+        Text(
+          value,
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(
+            fontWeight:
+            FontWeight.w800,
+          ),
+        ),
+
+        const SizedBox(height: 2),
+
+        Text(
+          label,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 44,
+      color: AppColors.divider,
+    );
+  }
+}
+
+Color _intensityColor(
+    WorkoutIntensity? intensity,
+    ) {
+  switch (intensity) {
+    case WorkoutIntensity.ringan:
+      return AppColors.heatmapLight;
+
+    case WorkoutIntensity.sedang:
+      return AppColors.heatmapMedium;
+
+    case WorkoutIntensity.berat:
+      return AppColors.heatmapHeavy;
+
+    case null:
+      return AppColors.heatmapNone;
   }
 }

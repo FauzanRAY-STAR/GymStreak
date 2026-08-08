@@ -28,7 +28,6 @@ class CalendarController extends GetxController {
   final Rx<DateTime> selectedDate = DateTime.now().obs;
   final RxMap<String, List<WorkoutSession>> sessionsByDate =
       <String, List<WorkoutSession>>{}.obs;
-  final RxBool showHeatmap = false.obs;
   final RxBool isLoading = true.obs;
 
   final RxInt currentStreak = 0.obs;
@@ -102,10 +101,6 @@ class CalendarController extends GetxController {
   void onPageChanged(DateTime month) {
     focusedMonth.value = month;
     loadMonth(month);
-  }
-
-  void toggleView() {
-    showHeatmap.value = !showHeatmap.value;
   }
 
   int get monthlyTotalWorkouts =>
