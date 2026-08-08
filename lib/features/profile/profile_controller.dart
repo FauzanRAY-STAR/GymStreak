@@ -111,4 +111,75 @@ class ProfileController extends GetxController {
     await DatabaseHelper.instance.resetUserData();
     Get.offAllNamed(AppRoutes.splash);
   }
+  Future<void> cycleNotificationMode() async {
+    final current = settings.value;
+    if (current == null) return;
+
+    // Mode 0: Mati
+    if (!current.reminderEnabled) {
+      final permissionGranted =
+      await NotificationService.instance.requestPermission();
+
+      if (!permissionGranted) {
+        Get.snackbar(
+          'Izin notifikasi diperlukan',
+          'Izinkan notifikasi agar GymStreak dapat mengingatkan jadwalmu.',
+        );
+        return;
+      }
+
+      final updated = current.copyWith(
+        reminderEnabled: true,
+        secondReminderEnabled: false,
+      );
+
+      await _settingsRepository.saveSettings(updated);
+      settings.value = updated;
+
+      await NotificationService.instance.syncFromStoredSettings();
+
+      Get.snackbar(
+        'Pengingat Workout',
+        'Pengingat diaktifkan 1x.',
+      );
+
+      return;
+    }
+
+    // Mode 1: 1x -> 2x
+    if (!current.secondReminderEnabled) {
+      final updated = current.copyWith(
+        reminderEnabled: true,
+        secondReminderEnabled: true,
+      );
+
+      await _settingsRepository.saveSettings(updated);
+      settings.value = updated;
+
+      await NotificationService.instance.syncFromStoredSettings();
+
+      Get.snackbar(
+        'Pengingat Workout',
+        'Pengingat diaktifkan 2x.',
+      );
+
+      return;
+    }
+
+    // Mode 2: 2x -> Mati
+    final updated = current.copyWith(
+      reminderEnabled: false,
+      secondReminderEnabled: false,
+    );
+
+    await _settingsRepository.saveSettings(updated);
+    settings.value = updated;
+
+    await NotificationService.instance.cancelWorkoutReminders();
+
+    Get.snackbar(
+      'Pengingat Workout',
+      'Pengingat dimatikan.',
+    );
+  }
 }

@@ -12,55 +12,121 @@ class ScheduleListView extends GetView<ScheduleListController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Jadwal Workout')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: controller.addSchedule,
-        child: const Icon(Icons.add_rounded),
+      appBar: AppBar(
+        title: const Text('Jadwal Workout'),
+        actions: [
+          IconButton(
+            onPressed: controller.addSchedule,
+            tooltip: 'Tambah jadwal',
+            icon: const Icon(
+              Icons.add_rounded,
+              color: AppColors.accent,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
         }
+
         if (controller.schedules.isEmpty) {
-          return const _EmptyState();
+          return _EmptyState(
+            onAdd: controller.addSchedule,
+          );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-          itemCount: controller.schedules.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final schedule = controller.schedules[index];
-            return _ScheduleCard(
-              schedule: schedule,
-              onTap: () => controller.editSchedule(schedule),
-              onActiveChanged: (value) =>
-                  controller.toggleActive(schedule, value),
-              onDelete: () => _confirmDelete(context, schedule),
-            );
-          },
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                8,
+                20,
+                18,
+              ),
+              child: Text(
+                'Atur rutinitas latihan mingguanmu.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(
+                  20,
+                  0,
+                  20,
+                  28,
+                ),
+                itemCount: controller.schedules.length,
+                separatorBuilder: (_, _) =>
+                const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final schedule =
+                  controller.schedules[index];
+
+                  return _ScheduleCard(
+                    schedule: schedule,
+                    onTap: () =>
+                        controller.editSchedule(schedule),
+                    onActiveChanged: (value) =>
+                        controller.toggleActive(
+                          schedule,
+                          value,
+                        ),
+                    onDelete: () =>
+                        _confirmDelete(
+                          context,
+                          schedule,
+                        ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       }),
     );
   }
 
-  void _confirmDelete(BuildContext context, WorkoutSchedule schedule) {
+  void _confirmDelete(
+      BuildContext context,
+      WorkoutSchedule schedule,
+      ) {
     Get.dialog(
       AlertDialog(
         title: const Text('Hapus Jadwal?'),
         content: Text(
           'Jadwal "${schedule.workoutType}" pada hari '
-          '${AppConstants.dayLabel(schedule.dayOfWeek)} akan dihapus.',
+              '${AppConstants.dayLabel(schedule.dayOfWeek)} '
+              'akan dihapus.',
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Batal')),
+          TextButton(
+            onPressed: Get.back,
+            child: const Text('Batal'),
+          ),
           TextButton(
             onPressed: () {
               Get.back();
-              controller.deleteSchedule(schedule.id!);
+              controller.deleteSchedule(
+                schedule.id!,
+              );
             },
             child: const Text(
               'Hapus',
-              style: TextStyle(color: AppColors.error),
+              style: TextStyle(
+                color: AppColors.error,
+              ),
             ),
           ),
         ],
@@ -85,37 +151,147 @@ class _ScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: AppColors.divider,
+            ),
+          ),
           child: Row(
             children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: schedule.active
+                      ? AppColors.accent
+                      .withValues(alpha: 0.12)
+                      : AppColors.surfaceElevated,
+                  borderRadius:
+                  BorderRadius.circular(13),
+                ),
+                child: Icon(
+                  Icons.calendar_month_rounded,
+                  color: schedule.active
+                      ? AppColors.accent
+                      : AppColors.textMuted,
+                  size: 20,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      AppConstants.dayLabel(schedule.dayOfWeek),
-                      style: theme.textTheme.titleMedium,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            AppConstants.dayLabel(
+                              schedule.dayOfWeek,
+                            ),
+                            style: theme
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                              fontWeight:
+                              FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+
+                    const SizedBox(height: 3),
+
                     Text(
-                      '${schedule.workoutType} • ${schedule.reminderTime}',
-                      style: theme.textTheme.bodyMedium,
+                      schedule.workoutType,
+                      style: theme
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
+                        color:
+                        AppColors.textSecondary,
+                      ),
+                    ),
+
+                    const SizedBox(height: 3),
+
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule_rounded,
+                          size: 15,
+                          color: AppColors.accent,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          schedule.reminderTime,
+                          style:
+                          theme.textTheme.bodySmall,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              Switch(value: schedule.active, onChanged: onActiveChanged),
-              IconButton(
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: AppColors.error,
+
+              const SizedBox(width: 8),
+
+              Transform.scale(
+                scale: 0.78,
+                child: Switch(
+                  value: schedule.active,
+                  onChanged: onActiveChanged,
                 ),
-                onPressed: onDelete,
+              ),
+
+              PopupMenuButton<String>(
+                tooltip: 'Opsi jadwal',
+                icon: const Icon(
+                  Icons.more_vert_rounded,
+                  color: AppColors.textSecondary,
+                ),
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          color: AppColors.error,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Hapus jadwal',
+                          style: TextStyle(
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -126,33 +302,62 @@ class _ScheduleCard extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({
+    required this.onAdd,
+  });
+
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.calendar_today_rounded,
-              size: 56,
-              color: AppColors.accent,
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.accent
+                    .withValues(alpha: 0.10),
+                borderRadius:
+                BorderRadius.circular(24),
+              ),
+              child: const Icon(
+                Icons.calendar_month_rounded,
+                size: 34,
+                color: AppColors.accent,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             Text(
-              'Belum ada jadwal workout',
-              style: theme.textTheme.titleMedium,
+              'Belum ada jadwal',
+              style:
+              theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tambahkan jadwal workout untuk '
+                  'membangun rutinitas mingguan.',
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tekan tombol + untuk menambah jadwal baru.',
               style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(
+                Icons.add_rounded,
+              ),
+              label: const Text(
+                'Tambah Jadwal',
+              ),
             ),
           ],
         ),
