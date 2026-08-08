@@ -42,6 +42,7 @@ class HomeController extends GetxController {
   final RxInt weeklyCompletedDays = 0.obs;
   final Rxn<WorkoutSchedule> todaySchedule = Rxn<WorkoutSchedule>();
   final RxBool isTodayLogged = false.obs;
+  final Rxn<WorkoutSession> todaySession = Rxn<WorkoutSession>();
   final RxList<WorkoutSession> recentSessions = <WorkoutSession>[].obs;
   final Rxn<Recipe> recipeRecommendation = Rxn<Recipe>();
   final RxBool isLoading = true.obs;
@@ -84,7 +85,12 @@ class HomeController extends GetxController {
           .length;
 
       final todaySessions = await _sessionRepository.getByDate(today);
-      isTodayLogged.value = todaySessions.isNotEmpty;
+
+      todaySession.value = todaySessions.isEmpty
+          ? null
+          : todaySessions.first;
+
+      isTodayLogged.value = todaySession.value != null;
 
       final activeSchedules = await _scheduleRepository.getActive();
       WorkoutSchedule? match;

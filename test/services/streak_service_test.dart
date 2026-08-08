@@ -140,13 +140,21 @@ void main() {
   );
 
   test(
-    '6. Beberapa workout pada tanggal yang sama hanya dihitung satu kali',
-    () async {
-      await _addSession(sessionRepo, DateTime(2026, 8, 3));
-      await _addSession(sessionRepo, DateTime(2026, 8, 3));
-      await _addSession(sessionRepo, DateTime(2026, 8, 3));
+    '6. Satu tanggal hanya memiliki satu workout',
+        () async {
+      final date = DateTime(2026, 8, 3);
 
-      final progress = await service.recalculateWeek(DateTime(2026, 8, 3), 4);
+      await _addSession(sessionRepo, date);
+
+      final exists = await sessionRepo.existsOnDate(date);
+
+      expect(exists, isTrue);
+
+      final progress = await service.recalculateWeek(
+        date,
+        4,
+      );
+
       expect(progress.completedWorkoutDays, 1);
     },
   );

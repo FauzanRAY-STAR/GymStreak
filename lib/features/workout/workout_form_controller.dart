@@ -91,6 +91,7 @@ class WorkoutFormController extends GetxController {
     final effectiveType = workoutType.value == 'Custom Workout'
         ? customTypeController.text.trim()
         : workoutType.value;
+
     if (effectiveType.isEmpty) {
       Get.snackbar(
         'Jenis workout belum diisi',
@@ -100,6 +101,7 @@ class WorkoutFormController extends GetxController {
     }
 
     final duration = int.tryParse(durationController.text.trim());
+
     if (duration == null || duration <= 0) {
       Get.snackbar(
         'Durasi tidak valid',
@@ -108,7 +110,22 @@ class WorkoutFormController extends GetxController {
       return;
     }
 
+    final workoutAlreadyExists = await _repository.existsOnDate(
+      workoutDate.value,
+      excludeId: _editing?.id,
+    );
+
+    if (workoutAlreadyExists) {
+      Get.snackbar(
+        'Workout sudah tercatat',
+        'Tanggal ini sudah memiliki workout. '
+            'Satu hari hanya dapat memiliki satu workout.',
+      );
+      return;
+    }
+
     isSaving.value = true;
+
     final now = _clock.now();
     final notes = notesController.text.trim();
 
@@ -138,6 +155,7 @@ class WorkoutFormController extends GetxController {
     }
 
     final settings = await _settingsRepository.getSettings();
+
     if (settings != null) {
       await _streakService.recalculateWeek(
         workoutDate.value,
@@ -145,8 +163,6 @@ class WorkoutFormController extends GetxController {
       );
     }
 
-    // Jika workout hari ini sudah selesai, pengingat kedua hari ini
-    // dibatalkan dan jadwal minggu berikutnya dipasang kembali.
     await NotificationService.instance.syncFromStoredSettings();
 
     isSaving.value = false;

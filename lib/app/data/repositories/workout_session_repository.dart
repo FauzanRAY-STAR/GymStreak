@@ -18,13 +18,49 @@ class WorkoutSessionRepository {
 
   Future<List<WorkoutSession>> getByDate(DateTime date) async {
     final db = await _db;
+
     final rows = await db.query(
       'workout_sessions',
       where: 'workout_date = ?',
       whereArgs: [AppDateUtils.formatDateKey(date)],
       orderBy: 'id DESC',
     );
+
     return rows.map(WorkoutSession.fromMap).toList();
+  }
+
+  Future<WorkoutSession?> getOneByDate(DateTime date) async {
+    final sessions = await getByDate(date);
+
+    if (sessions.isEmpty) {
+      return null;
+    }
+
+    return sessions.first;
+  }
+
+  Future<bool> existsOnDate(
+      DateTime date, {
+        int? excludeId,
+      }) async {
+    final db = await _db;
+
+    final rows = await db.query(
+      'workout_sessions',
+      columns: ['id'],
+      where: excludeId == null
+          ? 'workout_date = ?'
+          : 'workout_date = ? AND id != ?',
+      whereArgs: excludeId == null
+          ? [AppDateUtils.formatDateKey(date)]
+          : [
+        AppDateUtils.formatDateKey(date),
+        excludeId,
+      ],
+      limit: 1,
+    );
+
+    return rows.isNotEmpty;
   }
 
   Future<List<WorkoutSession>> getByDateRange(

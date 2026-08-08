@@ -21,7 +21,7 @@ class DatabaseHelper {
   // saat beberapa file test berjalan bersamaan. Kode aplikasi tidak pernah
   // mengubah nilai ini.
   static String databaseFileName = 'gymstreak.db';
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 2;
 
   Database? _database;
 
@@ -86,7 +86,8 @@ class DatabaseHelper {
       )
     ''');
     await db.execute(
-      'CREATE INDEX idx_workout_sessions_date ON workout_sessions(workout_date)',
+      'CREATE UNIQUE INDEX idx_workout_sessions_date '
+          'ON workout_sessions(workout_date)',
     );
 
     await db.execute('''
@@ -131,9 +132,32 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // TODO(migration): tambahkan blok `if (oldVersion < N) { ... }` di sini
-    // ketika skema tabel berubah pada versi database berikutnya.
+  Future<void> _onUpgrade(
+      Database db,
+      int oldVersion,
+      int newVersion,
+      ) async {
+    if (oldVersion < 2) {
+      // Jika sebelumnya sudah terlanjur ada beberapa workout
+      // pada tanggal yang sama, simpan record terbaru saja.
+      await db.execute('''
+      DELETE FROM workout_sessions
+      WHERE id NOT IN (
+        SELECT MAX(id)
+        FROM workout_sessions
+        GROUP BY workout_date
+      )
+    ''');
+
+      await db.execute(
+        'DROP INDEX IF EXISTS idx_workout_sessions_date',
+      );
+
+      await db.execute(
+        'CREATE UNIQUE INDEX idx_workout_sessions_date '
+            'ON workout_sessions(workout_date)',
+      );
+    }
   }
 
   Future<void> _seedRecipesIfNeeded(Database db) async {
