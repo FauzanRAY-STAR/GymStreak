@@ -57,6 +57,7 @@ class WorkoutListController extends GetxController {
       await _streakService.recalculateWeek(
         session.workoutDate,
         settings.weeklyTarget,
+        recalculateFinalized: true,
       );
     }
 

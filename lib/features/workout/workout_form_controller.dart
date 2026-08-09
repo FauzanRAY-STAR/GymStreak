@@ -123,8 +123,10 @@ class WorkoutFormController extends GetxController {
       );
       return;
     }
-
     isSaving.value = true;
+
+    final previousWorkoutDate =
+        _editing?.workoutDate;
 
     final now = _clock.now();
     final notes = notesController.text.trim();
@@ -157,9 +159,32 @@ class WorkoutFormController extends GetxController {
     final settings = await _settingsRepository.getSettings();
 
     if (settings != null) {
+      if (previousWorkoutDate != null) {
+        final previousWeekStart =
+        AppDateUtils.startOfWeek(
+          previousWorkoutDate,
+        );
+
+        final currentWeekStart =
+        AppDateUtils.startOfWeek(
+          workoutDate.value,
+        );
+
+        if (!previousWeekStart.isAtSameMomentAs(
+          currentWeekStart,
+        )) {
+          await _streakService.recalculateWeek(
+            previousWorkoutDate,
+            settings.weeklyTarget,
+            recalculateFinalized: true,
+          );
+        }
+      }
+
       await _streakService.recalculateWeek(
         workoutDate.value,
         settings.weeklyTarget,
+        recalculateFinalized: true,
       );
     }
 

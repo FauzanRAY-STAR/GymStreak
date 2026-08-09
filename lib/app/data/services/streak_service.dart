@@ -31,12 +31,19 @@ class StreakService {
   final WorkoutSessionRepository _workoutSessionRepository;
   final ClockService _clock;
 
-  Future<WeeklyProgress> recalculateWeek(DateTime date, int target) async {
+  Future<WeeklyProgress> recalculateWeek(
+      DateTime date,
+      int target, {
+        bool recalculateFinalized = false,
+      }) async {
     final weekStart = AppDateUtils.startOfWeek(date);
     final weekEnd = AppDateUtils.endOfWeek(date);
 
     final existing = await _weeklyProgressRepository.getByWeekStart(weekStart);
-    if (existing != null && existing.finalized) {
+
+    if (existing != null &&
+        existing.finalized &&
+        !recalculateFinalized) {
       return existing;
     }
 
@@ -60,7 +67,7 @@ class StreakService {
       targetAtThatTime: targetForWeek,
       completedWorkoutDays: completedDays,
       achieved: completedDays >= targetForWeek,
-      finalized: isWeekOver,
+      finalized: existing?.finalized == true || isWeekOver,
     );
     await _weeklyProgressRepository.upsert(progress);
     return progress;
