@@ -5,6 +5,7 @@ import '../../app/data/models/user_settings.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/utils/app_constants.dart';
 import 'profile_controller.dart';
+import 'dart:io';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
@@ -16,18 +17,14 @@ class ProfileView extends GetView<ProfileController> {
         bottom: false,
         child: Obx(() {
           if (controller.isLoading.value) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final settings = controller.settings.value;
 
           if (settings == null) {
             return const Center(
-              child: Text(
-                'Data pengaturan tidak ditemukan.',
-              ),
+              child: Text('Data pengaturan tidak ditemukan.'),
             );
           }
 
@@ -35,12 +32,7 @@ class ProfileView extends GetView<ProfileController> {
             onRefresh: controller.loadProfile,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                20,
-                20,
-                48,
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
               children: [
                 _ProfileTitle(
                   reminderEnabled: settings.reminderEnabled,
@@ -53,56 +45,46 @@ class ProfileView extends GetView<ProfileController> {
                 _ProfileHeaderCard(
                   name: settings.name,
                   goal: settings.fitnessGoal,
+                  imagePath: controller.profileImagePath.value,
+                  onImageTap: controller.changeProfileImage,
                   onEdit: controller.openSettings,
                 ),
 
                 const SizedBox(height: 16),
 
                 _StatsOverviewCard(
-                  currentStreak:
-                  controller.currentStreak.value,
-                  longestStreak:
-                  controller.longestStreak.value,
-                  totalWorkouts:
-                  controller.totalWorkouts.value,
+                  currentStreak: controller.currentStreak.value,
+                  longestStreak: controller.longestStreak.value,
+                  totalWorkouts: controller.totalWorkouts.value,
                 ),
 
                 const SizedBox(height: 28),
 
                 const _SectionTitle(
                   title: 'Preferensi',
-                  subtitle:
-                  'Pengaturan latihan kamu',
+                  subtitle: 'Pengaturan latihan kamu',
                 ),
 
                 const SizedBox(height: 12),
 
-                _PreferencesCard(
-                  settings: settings,
-                ),
+                _PreferencesCard(settings: settings),
 
                 const SizedBox(height: 28),
 
                 const _SectionTitle(
                   title: 'Workout',
-                  subtitle:
-                  'Kelola jadwal dan riwayat latihan',
+                  subtitle: 'Kelola jadwal dan riwayat latihan',
                 ),
 
                 const SizedBox(height: 12),
 
                 _WorkoutManagementCard(
-                  onScheduleTap:
-                  controller.openScheduleList,
-                  onHistoryTap:
-                  controller.openWorkoutList,
+                  onScheduleTap: controller.openScheduleList,
+                  onHistoryTap: controller.openWorkoutList,
                 ),
                 const SizedBox(height: 28),
 
-                _ResetButton(
-                  onPressed: () =>
-                      _confirmReset(context),
-                ),
+                _ResetButton(onPressed: () => _confirmReset(context)),
               ],
             ),
           );
@@ -111,24 +93,17 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  void _confirmReset(
-      BuildContext context,
-      ) {
+  void _confirmReset(BuildContext context) {
     Get.dialog(
       AlertDialog(
-        title: const Text(
-          'Reset Semua Data?',
-        ),
+        title: const Text('Reset Semua Data?'),
         content: const Text(
           'Semua data workout, jadwal, streak, '
-              'dan pengaturan akan dihapus permanen. '
-              'Tindakan ini tidak bisa dibatalkan.',
+          'dan pengaturan akan dihapus permanen. '
+          'Tindakan ini tidak bisa dibatalkan.',
         ),
         actions: [
-          TextButton(
-            onPressed: Get.back,
-            child: const Text('Batal'),
-          ),
+          TextButton(onPressed: Get.back, child: const Text('Batal')),
           TextButton(
             onPressed: () {
               Get.back();
@@ -136,9 +111,7 @@ class ProfileView extends GetView<ProfileController> {
             },
             child: const Text(
               'Hapus',
-              style: TextStyle(
-                color: AppColors.error,
-              ),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
@@ -165,14 +138,11 @@ class _ProfileTitle extends StatelessWidget {
     IconData notificationIcon;
 
     if (!reminderEnabled) {
-      notificationIcon =
-          Icons.notifications_off_rounded;
+      notificationIcon = Icons.notifications_off_rounded;
     } else if (secondReminderEnabled) {
-      notificationIcon =
-          Icons.notifications_active_rounded;
+      notificationIcon = Icons.notifications_active_rounded;
     } else {
-      notificationIcon =
-          Icons.notifications_rounded;
+      notificationIcon = Icons.notifications_rounded;
     }
 
     return Row(
@@ -180,14 +150,11 @@ class _ProfileTitle extends StatelessWidget {
       children: [
         Expanded(
           child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Profil',
-                style: theme
-                    .textTheme.headlineMedium
-                    ?.copyWith(
+                style: theme.textTheme.headlineMedium?.copyWith(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
                 ),
@@ -195,10 +162,8 @@ class _ProfileTitle extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Pantau progres dan atur preferensi kamu.',
-                style:
-                theme.textTheme.bodySmall?.copyWith(
-                  color:
-                  AppColors.textSecondary,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -209,21 +174,16 @@ class _ProfileTitle extends StatelessWidget {
 
         Material(
           color: AppColors.surface,
-          borderRadius:
-          BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(14),
           child: InkWell(
             onTap: onNotificationTap,
-            borderRadius:
-            BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                borderRadius:
-                BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.divider,
-                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.divider),
               ),
               child: Icon(
                 notificationIcon,
@@ -244,11 +204,15 @@ class _ProfileHeaderCard extends StatelessWidget {
   const _ProfileHeaderCard({
     required this.name,
     required this.goal,
+    required this.imagePath,
+    required this.onImageTap,
     required this.onEdit,
   });
 
   final String name;
   final String goal;
+  final String? imagePath;
+  final VoidCallback onImageTap;
   final VoidCallback onEdit;
 
   @override
@@ -257,51 +221,71 @@ class _ProfileHeaderCard extends StatelessWidget {
 
     final initial = name.trim().isEmpty
         ? '?'
-        : name
-        .trim()
-        .substring(0, 1)
-        .toUpperCase();
+        : name.trim().substring(0, 1).toUpperCase();
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius:
-        BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1A261F),
-            Color(0xFF202F20),
-          ],
+          colors: [Color(0xFF1A261F), Color(0xFF202F20)],
         ),
-        border: Border.all(
-          color: AppColors.accent
-              .withValues(alpha: 0.25),
-        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.accentMuted,
-              borderRadius:
-              BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.accent
-                    .withValues(alpha: 0.25),
-              ),
-            ),
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: AppColors.accent,
-                fontSize: 23,
-                fontWeight: FontWeight.w800,
-              ),
+          GestureDetector(
+            onTap: onImageTap,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.accentMuted,
+                    border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.35),
+                      width: 1.5,
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: imagePath != null
+                      ? Image.file(File(imagePath!), fit: BoxFit.cover)
+                      : Center(
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                              color: AppColors.accent,
+                              fontSize: 23,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                ),
+
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.accent, width: 1.5),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      size: 12,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -309,39 +293,32 @@ class _ProfileHeaderCard extends StatelessWidget {
 
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
-                  style:
-                  theme.textTheme.titleLarge?.copyWith(
-                    fontWeight:
-                    FontWeight.w800,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
 
                 const SizedBox(height: 7),
 
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.accent
-                        .withValues(alpha: 0.10),
-                    borderRadius:
-                    BorderRadius.circular(20),
+                    color: AppColors.accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     goal,
                     style: const TextStyle(
                       color: AppColors.accent,
                       fontSize: 12,
-                      fontWeight:
-                      FontWeight.w600,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -377,25 +354,17 @@ class _StatsOverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-      const EdgeInsets.symmetric(
-        vertical: 18,
-        horizontal: 8,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius:
-        BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.divider,
-        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Row(
         children: [
           Expanded(
             child: _StatItem(
-              icon: Icons
-                  .local_fire_department_rounded,
+              icon: Icons.local_fire_department_rounded,
               value: '$currentStreak',
               label: 'Streak',
             ),
@@ -405,8 +374,7 @@ class _StatsOverviewCard extends StatelessWidget {
 
           Expanded(
             child: _StatItem(
-              icon:
-              Icons.emoji_events_rounded,
+              icon: Icons.emoji_events_rounded,
               value: '$longestStreak',
               label: 'Terbaik',
             ),
@@ -416,8 +384,7 @@ class _StatsOverviewCard extends StatelessWidget {
 
           Expanded(
             child: _StatItem(
-              icon:
-              Icons.fitness_center_rounded,
+              icon: Icons.fitness_center_rounded,
               value: '$totalWorkouts',
               label: 'Workout',
             ),
@@ -445,18 +412,13 @@ class _StatItem extends StatelessWidget {
 
     return Column(
       children: [
-        Icon(
-          icon,
-          color: AppColors.accent,
-          size: 20,
-        ),
+        Icon(icon, color: AppColors.accent, size: 20),
 
         const SizedBox(height: 7),
 
         Text(
           value,
-          style:
-          theme.textTheme.titleLarge?.copyWith(
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -465,8 +427,7 @@ class _StatItem extends StatelessWidget {
 
         Text(
           label,
-          style:
-          theme.textTheme.bodySmall?.copyWith(
+          style: theme.textTheme.bodySmall?.copyWith(
             fontSize: 11,
             color: AppColors.textSecondary,
           ),
@@ -481,19 +442,12 @@ class _VerticalDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 48,
-      color: AppColors.divider,
-    );
+    return Container(width: 1, height: 48, color: AppColors.divider);
   }
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionTitle({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -503,32 +457,25 @@ class _SectionTitle extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Column(
-      crossAxisAlignment:
-      CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style:
-          theme.textTheme.titleLarge?.copyWith(
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
 
         const SizedBox(height: 3),
 
-        Text(
-          subtitle,
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(subtitle, style: theme.textTheme.bodySmall),
       ],
     );
   }
 }
 
 class _PreferencesCard extends StatelessWidget {
-  const _PreferencesCard({
-    required this.settings,
-  });
+  const _PreferencesCard({required this.settings});
 
   final UserSettings settings;
 
@@ -537,30 +484,23 @@ class _PreferencesCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius:
-        BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.divider,
-        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Column(
         children: [
           _PreferenceItem(
             icon: Icons.flag_rounded,
             title: 'Target Mingguan',
-            value:
-            '${settings.weeklyTarget}x per minggu',
+            value: '${settings.weeklyTarget}x per minggu',
           ),
 
           const _HorizontalDivider(),
 
           _PreferenceItem(
-            icon:
-            Icons.calendar_month_rounded,
+            icon: Icons.calendar_month_rounded,
             title: 'Hari Workout',
-            value: settings.workoutDays
-                .map(AppConstants.dayLabel)
-                .join(', '),
+            value: settings.workoutDays.map(AppConstants.dayLabel).join(', '),
           ),
 
           const _HorizontalDivider(),
@@ -599,44 +539,29 @@ class _PreferenceItem extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color:
-              AppColors.surfaceElevated,
-              borderRadius:
-              BorderRadius.circular(13),
+              color: AppColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: AppColors.accent,
-            ),
+            child: Icon(icon, size: 20, color: AppColors.accent),
           ),
 
           const SizedBox(width: 13),
 
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style:
-                  theme.textTheme.bodyMedium
-                      ?.copyWith(
-                    color:
-                    AppColors.textPrimary,
-                    fontWeight:
-                    FontWeight.w600,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
                 const SizedBox(height: 3),
 
-                Text(
-                  value,
-                  style:
-                  theme.textTheme.bodySmall,
-                ),
+                Text(value, style: theme.textTheme.bodySmall),
               ],
             ),
           ),
@@ -646,8 +571,7 @@ class _PreferenceItem extends StatelessWidget {
   }
 }
 
-class _WorkoutManagementCard
-    extends StatelessWidget {
+class _WorkoutManagementCard extends StatelessWidget {
   const _WorkoutManagementCard({
     required this.onScheduleTap,
     required this.onHistoryTap,
@@ -661,20 +585,15 @@ class _WorkoutManagementCard
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius:
-        BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.divider,
-        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Column(
         children: [
           _MenuItem(
-            icon:
-            Icons.calendar_month_rounded,
+            icon: Icons.calendar_month_rounded,
             title: 'Jadwal Workout',
-            subtitle:
-            'Atur hari, jenis, dan jam latihan',
+            subtitle: 'Atur hari, jenis, dan jam latihan',
             onTap: onScheduleTap,
           ),
 
@@ -683,8 +602,7 @@ class _WorkoutManagementCard
           _MenuItem(
             icon: Icons.history_rounded,
             title: 'Riwayat Workout',
-            subtitle:
-            'Lihat dan kelola workout sebelumnya',
+            subtitle: 'Lihat dan kelola workout sebelumnya',
             onTap: onHistoryTap,
           ),
         ],
@@ -714,8 +632,7 @@ class _MenuItem extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius:
-        BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(22),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -724,52 +641,36 @@ class _MenuItem extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color:
-                  AppColors.surfaceElevated,
-                  borderRadius:
-                  BorderRadius.circular(13),
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppColors.accent,
-                  size: 21,
-                ),
+                child: Icon(icon, color: AppColors.accent, size: 21),
               ),
 
               const SizedBox(width: 13),
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: theme
-                          .textTheme.bodyMedium
-                          ?.copyWith(
-                        color:
-                        AppColors.textPrimary,
-                        fontWeight:
-                        FontWeight.w600,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
 
                     const SizedBox(height: 3),
 
-                    Text(
-                      subtitle,
-                      style:
-                      theme.textTheme.bodySmall,
-                    ),
+                    Text(subtitle, style: theme.textTheme.bodySmall),
                   ],
                 ),
               ),
 
               const Icon(
                 Icons.chevron_right_rounded,
-                color:
-                AppColors.textSecondary,
+                color: AppColors.textSecondary,
               ),
             ],
           ),
@@ -779,24 +680,17 @@ class _MenuItem extends StatelessWidget {
   }
 }
 
-class _HorizontalDivider
-    extends StatelessWidget {
+class _HorizontalDivider extends StatelessWidget {
   const _HorizontalDivider();
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
-      height: 1,
-      indent: 16,
-      endIndent: 16,
-    );
+    return const Divider(height: 1, indent: 16, endIndent: 16);
   }
 }
 
 class _ResetButton extends StatelessWidget {
-  const _ResetButton({
-    required this.onPressed,
-  });
+  const _ResetButton({required this.onPressed});
 
   final VoidCallback onPressed;
 
@@ -806,25 +700,14 @@ class _ResetButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: const Icon(
-          Icons.delete_outline_rounded,
-          color: AppColors.error,
-        ),
+        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
         label: const Text(
           'Reset Semua Data',
-          style: TextStyle(
-            color: AppColors.error,
-          ),
+          style: TextStyle(color: AppColors.error),
         ),
         style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: AppColors.error
-                .withValues(alpha: 0.5),
-          ),
-          padding:
-          const EdgeInsets.symmetric(
-            vertical: 15,
-          ),
+          side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+          padding: const EdgeInsets.symmetric(vertical: 15),
         ),
       ),
     );

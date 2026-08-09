@@ -7,6 +7,7 @@ import '../../app/data/repositories/workout_session_repository.dart';
 import '../../app/data/services/notification_service.dart';
 import '../../app/data/services/streak_service.dart';
 import '../../app/routes/app_routes.dart';
+import '../../app/data/services/profile_image_service.dart';
 
 class ProfileController extends GetxController {
   ProfileController({
@@ -22,6 +23,7 @@ class ProfileController extends GetxController {
   final StreakService _streakService;
 
   final Rxn<UserSettings> settings = Rxn<UserSettings>();
+  final RxnString profileImagePath = RxnString();
   final RxInt totalWorkouts = 0.obs;
   final RxInt currentStreak = 0.obs;
   final RxInt longestStreak = 0.obs;
@@ -37,6 +39,8 @@ class ProfileController extends GetxController {
     isLoading.value = true;
     final loadedSettings = await _settingsRepository.getSettings();
     settings.value = loadedSettings;
+    profileImagePath.value = await ProfileImageService.instance
+        .getProfileImagePath();
     totalWorkouts.value = await _sessionRepository.count();
 
     if (loadedSettings != null) {
@@ -47,6 +51,14 @@ class ProfileController extends GetxController {
     }
 
     isLoading.value = false;
+  }
+
+  Future<void> changeProfileImage() async {
+    final path = await ProfileImageService.instance.pickProfileImage();
+
+    if (path != null) {
+      profileImagePath.value = path;
+    }
   }
 
   Future<void> toggleReminder(bool value) async {
@@ -108,17 +120,19 @@ class ProfileController extends GetxController {
 
   Future<void> resetAllData() async {
     await NotificationService.instance.cancelWorkoutReminders();
+    await ProfileImageService.instance.removeProfileImage();
     await DatabaseHelper.instance.resetUserData();
     Get.offAllNamed(AppRoutes.splash);
   }
+
   Future<void> cycleNotificationMode() async {
     final current = settings.value;
     if (current == null) return;
 
     // Mode 0: Mati
     if (!current.reminderEnabled) {
-      final permissionGranted =
-      await NotificationService.instance.requestPermission();
+      final permissionGranted = await NotificationService.instance
+          .requestPermission();
 
       if (!permissionGranted) {
         Get.snackbar(
@@ -138,10 +152,7 @@ class ProfileController extends GetxController {
 
       await NotificationService.instance.syncFromStoredSettings();
 
-      Get.snackbar(
-        'Pengingat Workout',
-        'Pengingat diaktifkan 1x.',
-      );
+      Get.snackbar('Pengingat Workout', 'Pengingat diaktifkan 1x.');
 
       return;
     }
@@ -158,10 +169,7 @@ class ProfileController extends GetxController {
 
       await NotificationService.instance.syncFromStoredSettings();
 
-      Get.snackbar(
-        'Pengingat Workout',
-        'Pengingat diaktifkan 2x.',
-      );
+      Get.snackbar('Pengingat Workout', 'Pengingat diaktifkan 2x.');
 
       return;
     }
@@ -177,9 +185,6 @@ class ProfileController extends GetxController {
 
     await NotificationService.instance.cancelWorkoutReminders();
 
-    Get.snackbar(
-      'Pengingat Workout',
-      'Pengingat dimatikan.',
-    );
+    Get.snackbar('Pengingat Workout', 'Pengingat dimatikan.');
   }
 }

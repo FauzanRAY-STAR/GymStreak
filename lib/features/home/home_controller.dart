@@ -12,6 +12,7 @@ import '../../app/data/services/streak_service.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/utils/app_date_utils.dart';
 import '../../app/utils/clock_service.dart';
+import '../../app/data/services/profile_image_service.dart';
 
 class HomeController extends GetxController {
   HomeController({
@@ -37,6 +38,7 @@ class HomeController extends GetxController {
   final ClockService _clock;
 
   final Rxn<UserSettings> settings = Rxn<UserSettings>();
+  final RxnString profileImagePath = RxnString();
   final RxInt currentStreak = 0.obs;
   final RxInt longestStreak = 0.obs;
   final RxInt weeklyCompletedDays = 0.obs;
@@ -66,6 +68,8 @@ class HomeController extends GetxController {
     final loadedSettings = await _settingsRepository.getSettings();
     settings.value = loadedSettings;
 
+    profileImagePath.value = await ProfileImageService.instance
+        .getProfileImagePath();
     if (loadedSettings != null) {
       await _streakService.syncWeeklyProgress(loadedSettings.weeklyTarget);
       final stats = await _streakService.getStats();
@@ -86,9 +90,7 @@ class HomeController extends GetxController {
 
       final todaySessions = await _sessionRepository.getByDate(today);
 
-      todaySession.value = todaySessions.isEmpty
-          ? null
-          : todaySessions.first;
+      todaySession.value = todaySessions.isEmpty ? null : todaySessions.first;
 
       isTodayLogged.value = todaySession.value != null;
 

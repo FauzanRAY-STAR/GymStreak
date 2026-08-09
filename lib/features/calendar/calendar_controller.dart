@@ -6,20 +6,27 @@ import '../../app/data/repositories/workout_session_repository.dart';
 import '../../app/data/services/streak_service.dart';
 import '../../app/utils/app_date_utils.dart';
 import '../../app/utils/clock_service.dart';
+import '../../app/data/models/workout_schedule.dart';
+import '../../app/data/repositories/workout_schedule_repository.dart';
 
 class CalendarController extends GetxController {
   CalendarController({
     WorkoutSessionRepository? sessionRepository,
+    WorkoutScheduleRepository? scheduleRepository,
     WeeklyProgressRepository? weeklyProgressRepository,
     StreakService? streakService,
     ClockService? clock,
-  }) : _sessionRepository = sessionRepository ?? WorkoutSessionRepository(),
-       _weeklyProgressRepository =
-           weeklyProgressRepository ?? WeeklyProgressRepository(),
-       _streakService = streakService ?? StreakService(),
-       _clock = clock ?? Get.find<ClockService>();
+  }) : _sessionRepository =
+      sessionRepository ?? WorkoutSessionRepository(),
+        _scheduleRepository =
+            scheduleRepository ?? WorkoutScheduleRepository(),
+        _weeklyProgressRepository =
+            weeklyProgressRepository ?? WeeklyProgressRepository(),
+        _streakService = streakService ?? StreakService(),
+        _clock = clock ?? Get.find<ClockService>();
 
   final WorkoutSessionRepository _sessionRepository;
+  final WorkoutScheduleRepository _scheduleRepository;
   final WeeklyProgressRepository _weeklyProgressRepository;
   final StreakService _streakService;
   final ClockService _clock;
@@ -28,6 +35,8 @@ class CalendarController extends GetxController {
   final Rx<DateTime> selectedDate = DateTime.now().obs;
   final RxMap<String, List<WorkoutSession>> sessionsByDate =
       <String, List<WorkoutSession>>{}.obs;
+  final RxList<WorkoutSchedule> activeSchedules =
+      <WorkoutSchedule>[].obs;
   final RxBool isLoading = true.obs;
 
   final RxInt currentStreak = 0.obs;
@@ -48,8 +57,17 @@ class CalendarController extends GetxController {
     currentStreak.value = await _streakService.getCurrentStreak();
   }
 
+  Future<void> refreshCalendar() async {
+    await _loadCurrentStreak();
+    await loadMonth(focusedMonth.value);
+  }
+
   Future<void> loadMonth(DateTime month) async {
     isLoading.value = true;
+
+    activeSchedules.value =
+    await _scheduleRepository.getActive();
+
     final sessions = await _sessionRepository.getByMonth(
       month.year,
       month.month,
@@ -79,6 +97,15 @@ class CalendarController extends GetxController {
 
   List<WorkoutSession> sessionsFor(DateTime date) {
     return sessionsByDate[AppDateUtils.formatDateKey(date)] ?? const [];
+  }
+  WorkoutSchedule? scheduleFor(DateTime date) {
+    for (final schedule in activeSchedules) {
+      if (schedule.dayOfWeek == date.weekday) {
+        return schedule;
+      }
+    }
+
+    return null;
   }
 
   /// Intensitas tertinggi pada [date], atau null jika tidak ada workout.

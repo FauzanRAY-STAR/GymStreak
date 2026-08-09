@@ -8,6 +8,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/widgets/recipe_image.dart';
 import '../../app/widgets/workout_session_tile.dart';
 import 'home_controller.dart';
+import 'dart:io';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -19,9 +20,7 @@ class HomeView extends GetView<HomeController> {
         bottom: false,
         child: Obx(() {
           if (controller.isLoading.value) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final settings = controller.settings.value;
@@ -41,6 +40,7 @@ class HomeView extends GetView<HomeController> {
                 _HomeHeader(
                   greeting: controller.greeting,
                   name: settings.name,
+                  imagePath: controller.profileImagePath.value,
                 ),
 
                 const SizedBox(height: 20),
@@ -71,8 +71,7 @@ class HomeView extends GetView<HomeController> {
                 _DailyRecipeCard(
                   recipe: controller.recipeRecommendation.value,
                   onOpen: () {
-                    final recipe =
-                        controller.recipeRecommendation.value;
+                    final recipe = controller.recipeRecommendation.value;
 
                     if (recipe != null) {
                       controller.openRecipe(recipe);
@@ -99,10 +98,12 @@ class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.greeting,
     required this.name,
+    required this.imagePath,
   });
 
   final String greeting;
   final String name;
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -118,10 +119,7 @@ class _HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                greeting,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(greeting, style: theme.textTheme.bodyMedium),
               const SizedBox(height: 3),
               Text(
                 name,
@@ -144,24 +142,29 @@ class _HomeHeader extends StatelessWidget {
         const SizedBox(width: 16),
 
         Container(
-          width: 50,
-          height: 50,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
+            shape: BoxShape.circle,
             color: AppColors.accentMuted,
-            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.25),
+              color: AppColors.accent.withValues(alpha: 0.30),
+              width: 1.5,
             ),
           ),
-          alignment: Alignment.center,
-          child: Text(
-            initial,
-            style: const TextStyle(
-              color: AppColors.accent,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          clipBehavior: Clip.antiAlias,
+          child: imagePath != null
+              ? Image.file(File(imagePath!), fit: BoxFit.cover)
+              : Center(
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
         ),
       ],
     );
@@ -185,9 +188,7 @@ class _StreakHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final progress = target <= 0
-        ? 0.0
-        : (completed / target).clamp(0.0, 1.0);
+    final progress = target <= 0 ? 0.0 : (completed / target).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(22),
@@ -196,10 +197,7 @@ class _StreakHeroCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1A261F),
-            Color(0xFF202F20),
-          ],
+          colors: [Color(0xFF1A261F), Color(0xFF202F20)],
         ),
         border: Border.all(
           color: AppColors.accent.withValues(alpha: 0.35),
@@ -236,10 +234,7 @@ class _StreakHeroCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Streak Mingguan',
-                      style: theme.textTheme.titleMedium,
-                    ),
+                    Text('Streak Mingguan', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 2),
                     Text(
                       'Minggu berturut-turut mencapai target',
@@ -268,19 +263,13 @@ class _StreakHeroCard extends StatelessWidget {
               const SizedBox(width: 8),
               Padding(
                 padding: const EdgeInsets.only(bottom: 5),
-                child: Text(
-                  'minggu',
-                  style: theme.textTheme.bodyMedium,
-                ),
+                child: Text('minggu', style: theme.textTheme.bodyMedium),
               ),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    'Terbaik',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  Text('Terbaik', style: theme.textTheme.bodySmall),
                   const SizedBox(height: 3),
                   Text(
                     '$longestStreak minggu',
@@ -323,9 +312,7 @@ class _StreakHeroCard extends StatelessWidget {
               value: progress,
               minHeight: 9,
               backgroundColor: AppColors.surfaceElevated,
-              valueColor: const AlwaysStoppedAnimation(
-                AppColors.accent,
-              ),
+              valueColor: const AlwaysStoppedAnimation(AppColors.accent),
             ),
           ),
         ],
@@ -335,10 +322,7 @@ class _StreakHeroCard extends StatelessWidget {
 }
 
 class _TodayWorkoutCard extends StatelessWidget {
-  const _TodayWorkoutCard({
-    required this.schedule,
-    required this.session,
-  });
+  const _TodayWorkoutCard({required this.schedule, required this.session});
 
   final WorkoutSchedule? schedule;
   final WorkoutSession? session;
@@ -355,9 +339,7 @@ class _TodayWorkoutCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.divider,
-        ),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,13 +395,13 @@ class _TodayWorkoutCard extends StatelessWidget {
 
                   Text(
                     '${session!.durationMinutes} menit'
-                        ' • ${session!.intensity.label}',
+                    ' • ${session!.intensity.label}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ] else if (hasSchedule) ...[
                   Text(
                     '${schedule!.workoutType} • '
-                        '${schedule!.reminderTime}',
+                    '${schedule!.reminderTime}',
                     style: theme.textTheme.bodyMedium,
                   ),
 
@@ -443,10 +425,7 @@ class _TodayWorkoutCard extends StatelessWidget {
 
           if (hasWorkout)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(20),
@@ -467,10 +446,7 @@ class _TodayWorkoutCard extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionHeader({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -489,20 +465,14 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 3),
-        Text(
-          subtitle,
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(subtitle, style: theme.textTheme.bodySmall),
       ],
     );
   }
 }
 
 class _DailyRecipeCard extends StatelessWidget {
-  const _DailyRecipeCard({
-    required this.recipe,
-    required this.onOpen,
-  });
+  const _DailyRecipeCard({required this.recipe, required this.onOpen});
 
   final Recipe? recipe;
   final VoidCallback onOpen;
@@ -519,9 +489,7 @@ class _DailyRecipeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: AppColors.divider),
         ),
-        child: const Text(
-          'Rekomendasi resep belum tersedia.',
-        ),
+        child: const Text('Rekomendasi resep belum tersedia.'),
       );
     }
 
@@ -536,11 +504,7 @@ class _DailyRecipeCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            RecipeImage(
-              recipe: item,
-              width: double.infinity,
-              height: 175,
-            ),
+            RecipeImage(recipe: item, width: double.infinity, height: 175),
 
             Padding(
               padding: const EdgeInsets.all(18),
@@ -560,14 +524,13 @@ class _DailyRecipeCard extends StatelessWidget {
                     children: [
                       _RecipeMetric(
                         icon: Icons.bolt_rounded,
-                        text:
-                        '${item.estimatedProtein.toStringAsFixed(0)} g',
+                        text: '${item.estimatedProtein.toStringAsFixed(0)} g',
                       ),
                       const SizedBox(width: 16),
                       _RecipeMetric(
                         icon: Icons.local_fire_department_rounded,
                         text:
-                        '${item.estimatedCalories.toStringAsFixed(0)} kkal',
+                            '${item.estimatedCalories.toStringAsFixed(0)} kkal',
                       ),
                       const SizedBox(width: 16),
                       _RecipeMetric(
@@ -587,10 +550,7 @@ class _DailyRecipeCard extends StatelessWidget {
 }
 
 class _RecipeMetric extends StatelessWidget {
-  const _RecipeMetric({
-    required this.icon,
-    required this.text,
-  });
+  const _RecipeMetric({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -600,17 +560,13 @@ class _RecipeMetric extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: AppColors.accent,
-          size: 16,
-        ),
+        Icon(icon, color: AppColors.accent, size: 16),
         const SizedBox(width: 5),
         Text(
           text,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -643,10 +599,7 @@ class _RecentWorkoutsSection extends StatelessWidget {
                 ),
               ),
             ),
-            TextButton(
-              onPressed: onSeeAll,
-              child: const Text('Lihat Semua'),
-            ),
+            TextButton(onPressed: onSeeAll, child: const Text('Lihat Semua')),
           ],
         ),
 
@@ -659,9 +612,7 @@ class _RecentWorkoutsSection extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: AppColors.divider,
-              ),
+              border: Border.all(color: AppColors.divider),
             ),
             child: Column(
               children: [
@@ -689,12 +640,10 @@ class _RecentWorkoutsSection extends StatelessWidget {
             children: sessions
                 .map(
                   (session) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: WorkoutSessionTile(
-                  session: session,
-                ),
-              ),
-            )
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: WorkoutSessionTile(session: session),
+                  ),
+                )
                 .toList(),
           ),
       ],

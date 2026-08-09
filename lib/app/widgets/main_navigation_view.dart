@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import '../../features/profile/profile_controller.dart';
 import '../../features/calendar/calendar_view.dart';
 import '../../features/home/home_view.dart';
 import '../../features/nutrition/nutrition_view.dart';
@@ -12,6 +12,7 @@ import '../../features/home/home_controller.dart';
 import '../data/repositories/workout_session_repository.dart';
 import '../utils/app_date_utils.dart';
 import '../utils/clock_service.dart';
+import '../../features/calendar/calendar_controller.dart';
 
 class MainNavigationView extends GetView<MainNavigationController> {
   const MainNavigationView({super.key});
@@ -22,14 +23,37 @@ class MainNavigationView extends GetView<MainNavigationController> {
     NutritionView(),
     ProfileView(),
   ];
+  Future<void> _changeTab(int index) async {
+    controller.changeTab(index);
+
+    switch (index) {
+      case 0:
+        if (Get.isRegistered<HomeController>()) {
+          await Get.find<HomeController>().loadHome();
+        }
+        break;
+
+      case 1:
+        if (Get.isRegistered<CalendarController>()) {
+          await Get.find<CalendarController>().refreshCalendar();
+        }
+        break;
+
+      case 3:
+        if (Get.isRegistered<ProfileController>()) {
+          await Get.find<ProfileController>().loadProfile();
+        }
+        break;
+    }
+  }
+
   Future<void> _openWorkout() async {
     final repository = WorkoutSessionRepository();
     final clock = Get.find<ClockService>();
 
     final today = AppDateUtils.dateOnly(clock.now());
 
-    final existingWorkout =
-    await repository.getOneByDate(today);
+    final existingWorkout = await repository.getOneByDate(today);
 
     dynamic arguments;
 
@@ -44,9 +68,7 @@ class MainNavigationView extends GetView<MainNavigationController> {
       final schedule = homeController.todaySchedule.value;
 
       if (schedule != null) {
-        arguments = {
-          'workoutType': schedule.workoutType,
-        };
+        arguments = {'workoutType': schedule.workoutType};
       }
     }
 
@@ -55,15 +77,25 @@ class MainNavigationView extends GetView<MainNavigationController> {
       arguments: arguments,
     );
 
-    if (result == true &&
-        Get.isRegistered<HomeController>()) {
-      await Get.find<HomeController>().loadHome();
+    if (result == true) {
+      if (Get.isRegistered<HomeController>()) {
+        await Get.find<HomeController>().loadHome();
+      }
+
+      if (Get.isRegistered<CalendarController>()) {
+        await Get.find<CalendarController>().refreshCalendar();
+      }
+
+      if (Get.isRegistered<ProfileController>()) {
+        await Get.find<ProfileController>().loadProfile();
+      }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Obx(
-          () => Scaffold(
+      () => Scaffold(
         extendBody: false,
 
         body: IndexedStack(
@@ -72,16 +104,13 @@ class MainNavigationView extends GetView<MainNavigationController> {
         ),
 
         // Tombol workout di tengah
-        floatingActionButtonLocation:
-        FloatingActionButtonLocation.centerDocked,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-            floatingActionButton: _WorkoutButton(
-              onTap: _openWorkout,
-            ),
+        floatingActionButton: _WorkoutButton(onTap: _openWorkout),
 
         bottomNavigationBar: _GymBottomNavigation(
           currentIndex: controller.currentIndex.value,
-          onTap: controller.changeTab,
+          onTap: _changeTab,
         ),
       ),
     );
@@ -89,9 +118,7 @@ class MainNavigationView extends GetView<MainNavigationController> {
 }
 
 class _WorkoutButton extends StatelessWidget {
-  const _WorkoutButton({
-    required this.onTap,
-  });
+  const _WorkoutButton({required this.onTap});
 
   final VoidCallback onTap;
 
@@ -119,20 +146,14 @@ class _WorkoutButton extends StatelessWidget {
         foregroundColor: AppColors.background,
         shape: const CircleBorder(),
         tooltip: 'Catat Workout',
-        child: const Icon(
-          Icons.fitness_center_rounded,
-          size: 25,
-        ),
+        child: const Icon(Icons.fitness_center_rounded, size: 25),
       ),
     );
   }
 }
 
 class _GymBottomNavigation extends StatelessWidget {
-  const _GymBottomNavigation({
-    required this.currentIndex,
-    required this.onTap,
-  });
+  const _GymBottomNavigation({required this.currentIndex, required this.onTap});
 
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -212,9 +233,7 @@ class _NavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected
-        ? AppColors.accent
-        : AppColors.textSecondary;
+    final color = selected ? AppColors.accent : AppColors.textSecondary;
 
     return InkWell(
       onTap: onTap,
@@ -229,11 +248,7 @@ class _NavigationItem extends StatelessWidget {
               scale: selected ? 1.08 : 1,
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutBack,
-              child: Icon(
-                icon,
-                size: 24,
-                color: color,
-              ),
+              child: Icon(icon, size: 24, color: color),
             ),
 
             const SizedBox(height: 5),
@@ -242,8 +257,7 @@ class _NavigationItem extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               style: TextStyle(
                 fontSize: 11,
-                fontWeight:
-                selected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: color,
               ),
               child: Text(label),
