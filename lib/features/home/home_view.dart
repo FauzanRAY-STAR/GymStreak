@@ -8,7 +8,6 @@ import '../../app/theme/app_colors.dart';
 import '../../app/widgets/recipe_image.dart';
 import '../../app/widgets/workout_session_tile.dart';
 import 'home_controller.dart';
-import 'dart:io';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -40,7 +39,9 @@ class HomeView extends GetView<HomeController> {
                 _HomeHeader(
                   greeting: controller.greeting,
                   name: settings.name,
-                  imagePath: controller.profileImagePath.value,
+                  reminderEnabled: settings.reminderEnabled,
+                  secondReminderEnabled: settings.secondReminderEnabled,
+                  onNotificationTap: controller.cycleNotificationMode,
                 ),
 
                 const SizedBox(height: 20),
@@ -98,20 +99,29 @@ class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.greeting,
     required this.name,
-    required this.imagePath,
+    required this.reminderEnabled,
+    required this.secondReminderEnabled,
+    required this.onNotificationTap,
   });
 
   final String greeting;
   final String name;
-  final String? imagePath;
+  final bool reminderEnabled;
+  final bool secondReminderEnabled;
+  final VoidCallback onNotificationTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    IconData notificationIcon;
 
-    final initial = name.trim().isEmpty
-        ? '?'
-        : name.trim().substring(0, 1).toUpperCase();
+    if (!reminderEnabled) {
+      notificationIcon = Icons.notifications_off_rounded;
+    } else if (secondReminderEnabled) {
+      notificationIcon = Icons.notifications_active_rounded;
+    } else {
+      notificationIcon = Icons.notifications_rounded;
+    }
 
     return Row(
       children: [
@@ -139,32 +149,32 @@ class _HomeHeader extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
 
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.accentMuted,
-            border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.30),
-              width: 1.5,
+        Material(
+          color: AppColors.surface,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onNotificationTap,
+            customBorder: const CircleBorder(),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.divider,
+                ),
+              ),
+              child: Icon(
+                notificationIcon,
+                size: 21,
+                color: reminderEnabled
+                    ? AppColors.accent
+                    : AppColors.textSecondary,
+              ),
             ),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: imagePath != null
-              ? Image.file(File(imagePath!), fit: BoxFit.cover)
-              : Center(
-                  child: Text(
-                    initial,
-                    style: const TextStyle(
-                      color: AppColors.accent,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
         ),
       ],
     );

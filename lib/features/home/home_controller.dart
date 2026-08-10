@@ -13,6 +13,7 @@ import '../../app/routes/app_routes.dart';
 import '../../app/utils/app_date_utils.dart';
 import '../../app/utils/clock_service.dart';
 import '../../app/data/services/profile_image_service.dart';
+import '../../app/data/services/notification_service.dart';
 
 class HomeController extends GetxController {
   HomeController({
@@ -109,6 +110,77 @@ class HomeController extends GetxController {
     recipeRecommendation.value = await _recommendationService
         .getTodayRecommendation();
     isLoading.value = false;
+  }
+  Future<void> cycleNotificationMode() async {
+    final current = settings.value;
+    if (current == null) return;
+
+    // Mati -> 1x
+    if (!current.reminderEnabled) {
+      final permissionGranted =
+      await NotificationService.instance.requestPermission();
+
+      if (!permissionGranted) {
+        Get.snackbar(
+          'Izin notifikasi diperlukan',
+          'Izinkan notifikasi agar GymStreak dapat mengingatkan jadwalmu.',
+        );
+        return;
+      }
+
+      final updated = current.copyWith(
+        reminderEnabled: true,
+        secondReminderEnabled: false,
+      );
+
+      await _settingsRepository.saveSettings(updated);
+      settings.value = updated;
+
+      await NotificationService.instance.syncFromStoredSettings();
+
+      Get.snackbar(
+        'Pengingat Workout',
+        'Pengingat diaktifkan 1x.',
+      );
+
+      return;
+    }
+
+    // 1x -> 2x
+    if (!current.secondReminderEnabled) {
+      final updated = current.copyWith(
+        reminderEnabled: true,
+        secondReminderEnabled: true,
+      );
+
+      await _settingsRepository.saveSettings(updated);
+      settings.value = updated;
+
+      await NotificationService.instance.syncFromStoredSettings();
+
+      Get.snackbar(
+        'Pengingat Workout',
+        'Pengingat diaktifkan 2x.',
+      );
+
+      return;
+    }
+
+    // 2x -> Mati
+    final updated = current.copyWith(
+      reminderEnabled: false,
+      secondReminderEnabled: false,
+    );
+
+    await _settingsRepository.saveSettings(updated);
+    settings.value = updated;
+
+    await NotificationService.instance.cancelWorkoutReminders();
+
+    Get.snackbar(
+      'Pengingat Workout',
+      'Pengingat dimatikan.',
+    );
   }
 
   void setRecipeRecommendation(Recipe recipe) {

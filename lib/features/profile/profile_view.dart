@@ -34,11 +34,7 @@ class ProfileView extends GetView<ProfileController> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
               children: [
-                _ProfileTitle(
-                  reminderEnabled: settings.reminderEnabled,
-                  secondReminderEnabled: settings.secondReminderEnabled,
-                  onNotificationTap: controller.cycleNotificationMode,
-                ),
+                const _ProfileTitle(),
 
                 const SizedBox(height: 20),
 
@@ -121,78 +117,27 @@ class ProfileView extends GetView<ProfileController> {
 }
 
 class _ProfileTitle extends StatelessWidget {
-  const _ProfileTitle({
-    required this.reminderEnabled,
-    required this.secondReminderEnabled,
-    required this.onNotificationTap,
-  });
-
-  final bool reminderEnabled;
-  final bool secondReminderEnabled;
-  final VoidCallback onNotificationTap;
+  const _ProfileTitle();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    IconData notificationIcon;
-
-    if (!reminderEnabled) {
-      notificationIcon = Icons.notifications_off_rounded;
-    } else if (secondReminderEnabled) {
-      notificationIcon = Icons.notifications_active_rounded;
-    } else {
-      notificationIcon = Icons.notifications_rounded;
-    }
-
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Profil',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Pantau progres dan atur preferensi kamu.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+        Text(
+          'Profil',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
           ),
         ),
-
-        const SizedBox(width: 12),
-
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            onTap: onNotificationTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: Icon(
-                notificationIcon,
-                color: reminderEnabled
-                    ? AppColors.accent
-                    : AppColors.textSecondary,
-                size: 23,
-              ),
-            ),
+        const SizedBox(height: 4),
+        Text(
+          'Pantau progres dan atur preferensi kamu.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
           ),
         ),
       ],
